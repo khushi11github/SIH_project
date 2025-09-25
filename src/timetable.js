@@ -117,6 +117,15 @@ class TimetableGenerator {
         parsed.normalizeAndPersist = config.normalizeAndPersist ? String(config.normalizeAndPersist).toLowerCase() === 'true' : false;
         parsed.branchingLimit = config.branchingLimit ? parseInt(config.branchingLimit) : 5;
         parsed.perDaySubjectCap = config.perDaySubjectCap ? parseInt(config.perDaySubjectCap) : 1;
+        // Ensure a default Lunch Break from 12:00-13:00 for each day
+        const lunchType = 'Lunch Break';
+        const hasLunch = (day) => parsed.specialPeriods.some(sp => sp.day === day && sp.startTime === '12:00' && sp.endTime === '13:00' && sp.type === lunchType);
+        (parsed.days || []).forEach(day => {
+            if (!hasLunch(day)) {
+                parsed.specialPeriods.push({ day: day.trim(), startTime: '12:00', endTime: '13:00', type: lunchType });
+            }
+        });
+        parsed.activitiesList = config.activitiesList ? String(config.activitiesList).split(',').map(s => s.trim()).filter(Boolean) : [];
         return parsed;
     }
 
@@ -381,7 +390,7 @@ validateData() {
                 const slotKey = `${slot.day}_${slot.startTime}`;
                 this.timetable[classObj.id].schedule[slotKey] = {
                     teacher: null,
-                    subject: null,
+                    subject: slot.isSpecialPeriod ? { id: `SP:${slot.specialType}`, name: slot.specialType } : null,
                     room: classObj.room,
                     isSpecialPeriod: slot.isSpecialPeriod,
                     specialType: slot.specialType
@@ -396,6 +405,36 @@ validateData() {
         this.greedyPrefill();
         const unassignedSlots = this.getUnassignedSlots();
         return this.backtrack(unassignedSlots);
+    }
+
+    // Fill remaining free slots with activities so students have productive periods
+    fillFreeSlotsWithActivities() {
+        const activities = (this.config.activitiesList && this.config.activitiesList.length > 0)
+            ? this.config.activitiesList
+            : ['Reading', 'Clubs', 'Sports', 'Library', 'Mentorship'];
+        if (activities.length === 0) return;
+        const activityTeacher = { id: 'ACT', name: 'Activity' };
+        const makeSubject = (name) => ({ id: `ACT:${name}`, name, credits: 0, weeklySessions: 0 });
+
+        // Round-robin assign activities across days and slots per class
+        this.classes.forEach(classObj => {
+            let idx = 0;
+            this.timeSlots.forEach(slot => {
+                const slotKey = `${slot.day}_${slot.startTime}`;
+                const a = this.timetable[classObj.id].schedule[slotKey];
+                if (a && !a.isSpecialPeriod && !a.subject) {
+                    const name = activities[idx % activities.length];
+                    this.timetable[classObj.id].schedule[slotKey] = {
+                        teacher: activityTeacher,
+                        subject: makeSubject(name),
+                        room: a.room,
+                        isSpecialPeriod: false,
+                        specialType: null
+                    };
+                    idx++;
+                }
+            });
+        });
     }
 
     greedyPrefill() {
@@ -986,6 +1025,8 @@ async function main() {
     const success = timetableGenerator.generateTimetable();
     
     if (success) {
+        // Fill remaining free slots with activities
+        timetableGenerator.fillFreeSlotsWithActivities();
         console.log('Timetable generated successfully!');
         
         // Display in console

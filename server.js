@@ -21,6 +21,8 @@ app.get('/api/generate', async (req, res) => {
 		if (!ok) {
 			return res.status(409).json({ error: 'Unable to generate timetable with given constraints' });
 		}
+		// Fill activities
+		tg.fillFreeSlotsWithActivities();
 		const classes = tg.displayTimetable();
 		return res.json({ classes });
 	} catch (e) {
