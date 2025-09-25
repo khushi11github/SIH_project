@@ -2,13 +2,13 @@
   "name": "timetable-generator",
   "version": "1.0.0",
   "description": "Advanced automatic timetable generator using CSP algorithm with Excel integration",
-  "main": "timetableGenerator.js",
+  "main": "src/timetable.js",
   "scripts": {
-    "start": "node timetableGenerator.js",
-    "generate": "node timetableGenerator.js",
-    "setup": "node setupSampleData.js"
+    "start": "node server.js",
+    "generate": "node src/timetable.js"
   },
   "dependencies": {
+    "express": "^4.19.2",
     "xlsx": "^0.18.5"
   },
   "keywords": [

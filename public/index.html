@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Timetable Viewer</title>
+	<style>
+		body { font-family: Arial, sans-serif; margin: 20px; }
+		h1 { margin-bottom: 8px; }
+		.controls { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+		select, button, input { padding: 6px 10px; }
+		.grid { border-collapse: collapse; width: 100%; }
+		.grid th, .grid td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+		.grid th { background: #f0f3f7; }
+		.section { margin-top: 24px; }
+		.small { color: #666; font-size: 12px; }
+	</style>
+</head>
+<body>
+	<h1>Timetable Viewer</h1>
+	<div class="controls">
+		<button id="generate">Generate</button>
+		<input id="classId" placeholder="Class ID (e.g., Grade10)" />
+		<button id="loadClass">Load Class</button>
+		<input id="teacherId" placeholder="Teacher ID (e.g., T1)" />
+		<button id="loadTeacher">Load Teacher</button>
+	</div>
+
+	<div class="section">
+		<h3>All Classes (weekly)</h3>
+		<pre id="allOut" class="small"></pre>
+	</div>
+
+	<div class="section">
+		<h3>Class Timetable</h3>
+		<table class="grid">
+			<thead>
+				<tr><th>Day</th><th>Time</th><th>Subject</th><th>Teacher</th><th>Room</th></tr>
+			</thead>
+			<tbody id="classOut"></tbody>
+		</table>
+	</div>
+
+	<div class="section">
+		<h3>Teacher Timetable</h3>
+		<table class="grid">
+			<thead>
+				<tr><th>Day</th><th>Time</th><th>Class</th><th>Subject</th><th>Room</th><th>Status</th></tr>
+			</thead>
+			<tbody id="teacherOut"></tbody>
+		</table>
+	</div>
+
+	<script>
+	async function generateAll() {
+		const res = await fetch('/api/generate');
+		const data = await res.json();
+		document.getElementById('allOut').textContent = JSON.stringify(data, null, 2);
+	}
+	async function loadClass() {
+		const id = document.getElementById('classId').value.trim();
+		if (!id) return;
+		const res = await fetch('/api/classes/' + encodeURIComponent(id));
+		const json = await res.json();
+		const tbody = document.getElementById('classOut');
+		tbody.innerHTML = '';
+		(json.data || []).forEach(row => {
+			if (!row.Day) return; // skip empty separators
+			const tr = document.createElement('tr');
+			tr.innerHTML = `<td>${row.Day}</td><td>${row.Time}</td><td>${row.Subject}</td><td>${row.Teacher}</td><td>${row.Room}</td>`;
+			tbody.appendChild(tr);
+		});
+	}
+	async function loadTeacher() {
+		const id = document.getElementById('teacherId').value.trim();
+		if (!id) return;
+		const res = await fetch('/api/teachers/' + encodeURIComponent(id));
+		const json = await res.json();
+		const tbody = document.getElementById('teacherOut');
+		tbody.innerHTML = '';
+		(json.data || []).forEach(row => {
+			if (!row.Day) return;
+			const tr = document.createElement('tr');
+			tr.innerHTML = `<td>${row.Day}</td><td>${row.Time}</td><td>${row.Class}</td><td>${row.Subject}</td><td>${row.Room}</td><td>${row.Status}</td>`;
+			tbody.appendChild(tr);
+		});
+	}
+	document.getElementById('generate').addEventListener('click', generateAll);
+	document.getElementById('loadClass').addEventListener('click', loadClass);
+	document.getElementById('loadTeacher').addEventListener('click', loadTeacher);
+	</script>
+</body>
+</html>
