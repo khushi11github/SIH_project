@@ -1,0 +1,24 @@
+{
+  "name": "timetable-generator",
+  "version": "1.0.0",
+  "description": "Advanced automatic timetable generator using CSP algorithm with Excel integration",
+  "main": "timetableGenerator.js",
+  "scripts": {
+    "start": "node timetableGenerator.js",
+    "generate": "node timetableGenerator.js",
+    "setup": "node setupSampleData.js"
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5"
+  },
+  "keywords": [
+    "timetable",
+    "scheduling",
+    "csp",
+    "backtracking",
+    "excel",
+    "automation"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}
